@@ -1,4 +1,5 @@
-//+build aix
+//go:build aix
+// +build aix
 
 // Copyright 2015 Daniel Theophanes.
 // Use of this source code is governed by a zlib-style
@@ -29,12 +30,15 @@ type aixSystem struct{}
 func (aixSystem) String() string {
 	return version
 }
+
 func (aixSystem) Detect() bool {
 	return true
 }
+
 func (aixSystem) Interactive() bool {
 	return interactive
 }
+
 func (aixSystem) New(i Interface, c *Config) (Service, error) {
 	s := &aixService{
 		i:      i,
@@ -122,7 +126,11 @@ func (s *aixService) Install() error {
 	if err != nil {
 		return err
 	}
-	err = run("mkssys", "-s", s.Name, "-p", path, "-u", "0", "-R", "-Q", "-S", "-n", "15", "-f", "9", "-d", "-w", "30")
+	if len(s.Config.Arguments) > 0 {
+		err = run("mkssys", "-s", s.Name, "-p", path, "-a", strings.Join(s.Config.Arguments, " "), "-u", "0", "-R", "-Q", "-S", "-n", "15", "-f", "9", "-d", "-w", "30")
+	} else {
+		err = run("mkssys", "-s", s.Name, "-p", path, "-u", "0", "-R", "-Q", "-S", "-n", "15", "-f", "9", "-d", "-w", "30")
+	}
 	if err != nil {
 		return err
 	}
@@ -143,7 +151,7 @@ func (s *aixService) Install() error {
 	}
 	defer f.Close()
 
-	var to = &struct {
+	to := &struct {
 		*Config
 		Path string
 	}{
@@ -227,9 +235,11 @@ func (s *aixService) Status() (Status, error) {
 func (s *aixService) Start() error {
 	return run("startsrc", "-s", s.Name)
 }
+
 func (s *aixService) Stop() error {
 	return run("stopsrc", "-s", s.Name)
 }
+
 func (s *aixService) Restart() error {
 	err := s.Stop()
 	if err != nil {
@@ -248,7 +258,7 @@ func (s *aixService) Run() error {
 	}
 
 	s.Option.funcSingle(optionRunWait, func() {
-		var sigChan = make(chan os.Signal, 3)
+		sigChan := make(chan os.Signal, 3)
 		signal.Notify(sigChan, syscall.SIGTERM, os.Interrupt)
 		<-sigChan
 	})()
@@ -262,6 +272,7 @@ func (s *aixService) Logger(errs chan<- error) (Logger, error) {
 	}
 	return s.SystemLogger(errs)
 }
+
 func (s *aixService) SystemLogger(errs chan<- error) (Logger, error) {
 	return newSysLogger(s.Name, errs)
 }
