@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kardianos/service"
+	"github.com/feiyuw/service"
 )
 
 func TestRunInterrupt(t *testing.T) {
@@ -77,9 +77,11 @@ func (p *program) Start(s service.Service) error {
 	go p.run()
 	return nil
 }
+
 func (p *program) run() {
 	// Do work here
 }
+
 func (p *program) Stop(s service.Service) error {
 	p.numStopped++
 	return nil
